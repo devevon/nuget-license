@@ -5,6 +5,9 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using CommandLine;
 using CommandLine.Text;
+
+using NugetUtility.Model;
+
 using static NugetUtility.Utilities;
 
 namespace NugetUtility
@@ -67,6 +70,9 @@ namespace NugetUtility
 
         [Option('m', "md", Default = false, HelpText = "Saves the licenses list to a markdown file (licenses.md)")]
         public bool MarkDownOutput { get; set; }
+
+        [Option("csv", Default = false, HelpText = "Saves licenses list in a csv file (licenses.csv)")]
+        public bool CsvOutput { get; set; }
 
         [Option('e', "export-license-texts", Default = false, HelpText = "Exports the raw license texts")]
         public bool ExportLicenseTexts { get; set; }

@@ -1,4 +1,7 @@
 ﻿using CommandLine;
+
+using NugetUtility.Model;
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace NugetUtility
 {
-    public class Program
+    public static class Program
     {
         public static async Task<int> Main(string[] args)
         {
@@ -87,6 +90,10 @@ namespace NugetUtility
                 else if (options.MarkDownOutput)
                 {
                     methods.SaveAsMarkdown(mappedLibraryInfo);
+                }
+                else if (options.CsvOutput)
+                {
+                    methods.SaveAsCsvFile(mappedLibraryInfo);
                 }
                 else
                 {

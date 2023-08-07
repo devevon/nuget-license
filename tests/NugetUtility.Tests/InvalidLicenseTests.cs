@@ -1,4 +1,7 @@
 ﻿using FluentAssertions;
+
+using NugetUtility.Model;
+
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;

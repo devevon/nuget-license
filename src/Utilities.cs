@@ -8,9 +8,6 @@ namespace NugetUtility
 {
     public static class Utilities
     {
-        public static bool IsLicenseFile(this License license) =>
-            string.Compare(license?.Type, "file", StringComparison.OrdinalIgnoreCase) == 0;
-
         public static string EnsureCorrectPathCharacter(this string path) =>
             path?.Replace("\\", "/").Trim();
 
