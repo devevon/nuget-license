@@ -13,7 +13,7 @@ namespace NugetUtility
     {
         public static async Task<int> Main(string[] args)
         {
-            var result = Parser.Default.ParseArguments<PackageOptions>(args);
+             var result = Parser.Default.ParseArguments<PackageOptions>(args);
             return await result.MapResult(
                 options => Execute(options),
                 errors => Task.FromResult(1));
@@ -49,6 +49,14 @@ namespace NugetUtility
             {
                 Console.WriteLine("ERROR(S):");
                 Console.WriteLine("--use-project-assets-json\tThis option always includes transitive references, so you must also provide the -t option.");
+
+                return 1;
+            }
+
+            if (options.LatestVersion && !options.UniqueOnly)
+            {
+                Console.WriteLine("ERROR(S):");
+                Console.WriteLine("-v; --latest-version\tThis option requires licenses to be unique, so you must also provide the -u or --unique option.");
 
                 return 1;
             }

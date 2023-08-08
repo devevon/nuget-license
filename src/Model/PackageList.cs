@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using NugetUtility.Model;
+using System.Collections.Generic;
 
 namespace NugetUtility
 {

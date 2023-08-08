@@ -62,6 +62,9 @@ namespace NugetUtility
         [Option('u', "unique", Default = false, HelpText = "Unique licenses list by Id/Version")]
         public bool UniqueOnly { get; set; }
 
+        [Option('v', "latest-version", Default = false, HelpText = "Excludes older versions of the same license and only shows the latest")]
+        public bool LatestVersion { get; set; }
+
         [Option('p', "print", Default = true, HelpText = "Print licenses.")]
         public bool? Print { get; set; }
 

@@ -483,6 +483,17 @@ namespace NugetUtility
                     .ToList();
             }
 
+            if (_packageOptions.LatestVersion)
+            {
+                libraryInfos = libraryInfos
+                    .GroupBy(x => new { x.PackageName, x.LicenseType, x.LicenseUrl })
+                    .Select(g =>
+                    {
+                        return g.OrderByDescending(y => y.PackageVersion).First();
+                    })
+                    .ToList();
+            }
+
             return libraryInfos
                 .OrderBy(p => p.PackageName)
                 .ToList();
