@@ -93,6 +93,7 @@ namespace NugetUtility
             { "http://www.gnu.org/licenses/lgpl.html", GNU },
             { "https://raw.githubusercontent.com/NetTopologySuite/ProjNet4GeoAPI/master/LICENSE", GNU },
             { "https://raw.githubusercontent.com/NetTopologySuite/GeoAPI/master/src/GeoAPI.CoordinateSystems/License.txt", GNU },
+            { "https://licenses.nuget.org/LGPL-2.1-or-later", GNU },
 
             { "https://licenses.nuget.org/BSD-2-Clause", BSD_2_Clause },
 
