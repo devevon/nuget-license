@@ -540,6 +540,17 @@ namespace NugetUtility
                     .ToList();
             }
 
+            if (_packageOptions.LatestVersion)
+            {
+                libraryInfos = libraryInfos
+                    .GroupBy(x => new { x.PackageName, x.LicenseType, x.LicenseUrl })
+                    .Select(g =>
+                    {
+                        return g.OrderByDescending(y => y.PackageVersion).First();
+                    })
+                    .ToList();
+            }
+
             return libraryInfos
                 .OrderBy(p => p.PackageName)
                 .ToList();
@@ -771,10 +782,16 @@ namespace NugetUtility
         {
             if (package?.Metadata is null) { return; }
 
-            if (package.Metadata.LicenseUrl is string licenseUrl &&
-                package.Metadata.License?.Text is null)
+            if (package.Metadata.LicenseUrl is string licenseUrl)
             {
-                if (_licenseMappings.TryGetValue(licenseUrl, out var mappedLicense))
+                _licenseMappings.TryGetValue(licenseUrl, out var mappedLicense);
+
+                //if mapping exists locally then the value possibly received via http-request will be overwritten
+                if (package.Metadata.License?.Text is not null && mappedLicense is not null)
+                {
+                    package.Metadata.License.Text = mappedLicense;
+                }
+                else if (package.Metadata.License?.Text is null && mappedLicense is not null)
                 {
                     package.Metadata.License = new License { Text = mappedLicense };
                 }
@@ -1084,6 +1101,10 @@ namespace NugetUtility
                 if (item.LicenseUrl == deprecateNugetLicense)
                 {
                     item.LicenseUrl = string.Format("https://www.nuget.org/packages/{0}/{1}/License", item.PackageName, item.PackageVersion);
+                    if (_licenseMappings.TryGetValue(item.LicenseUrl, out var mappedLicense))
+                    {
+                        item.LicenseType = mappedLicense;
+                    }
                 }
             }
             return result;
