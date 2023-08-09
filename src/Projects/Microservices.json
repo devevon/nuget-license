@@ -1,0 +1,19 @@
+[
+  "C:\\Software\\VMIS2\\OpGui_AlarmHistoryService\\OpGui_AlarmHistoryService.sln",
+  "C:\\Software\\VMIS2\\OpGui_AlarmingService\\OpGui_AlarmingService.sln",
+  "C:\\Software\\VMIS2\\OpGui_AutomationControlContainerService\\OpGui_AutomationControlContainerService.sln",
+  "C:\\Software\\VMIS2\\OpGui_ClientRemoteControlService\\OpGui_ClientRemoteControlService.sln",
+  "C:\\Software\\VMIS2\\OpGui_Configurations\\OpGuiConfigurations.sln",
+  "C:\\Software\\VMIS2\\OpGui_ControlDataService\\OpGui_ControlDataService.sln",
+  "C:\\Software\\VMIS2\\OpGui_IncidentService\\OpGui_IncidentService.sln",
+  "C:\\Software\\VMIS2\\OpGui_InstanceService\\OpGui_InstanceService.sln",
+  "C:\\Software\\VMIS2\\OpGui_KernsystemService\\OpGui_KernsystemService.sln",
+  "C:\\Software\\VMIS2\\OpGui_MeasureService\\OpGuiMeasureService.sln",
+  "C:\\Software\\VMIS2\\OpGui_RemedyService\\OpGui_RemedyService.sln",
+  "C:\\Software\\VMIS2\\OpGui_SituationService\\OpGuiSituationService.sln",
+  "C:\\Software\\VMIS2\\OpGui_TaggingService\\OpGui_TaggingService.sln",
+  "C:\\Software\\VMIS2\\OpGui_UserInteractionService\\OpGui_UserInteractionService.sln",
+
+  "C:\\Software\\XAMServices\\LocalizationService\\XAMServices_LocalizationService.sln",
+  "C:\\Software\\XAMServices\\TicketService\\XAMServices_TicketService.sln"
+]

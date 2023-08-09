@@ -15,6 +15,10 @@ using System.Xml.XPath;
 using HtmlAgilityPack;
 using Newtonsoft.Json;
 using NuGet.Versioning;
+
+using NugetUtility.Helper;
+using NugetUtility.Model;
+
 using static NugetUtility.Utilities;
 
 namespace NugetUtility
@@ -95,9 +99,9 @@ namespace NugetUtility
         /// <param name="project">project name</param>
         /// <param name="packages">List of projects</param>
         /// <returns></returns>
-        public async Task<PackageList> GetNugetInformationAsync(string project, IEnumerable<PackageNameAndVersion> packages)
+        public async Task<Project> GetNugetInformationAsync(string project, IEnumerable<PackageNameAndVersion> packages)
         {
-            var licenses = new PackageList();
+            var licenses = new Project(project);
             foreach (var packageWithVersion in packages)
             {
                 try
@@ -177,7 +181,7 @@ namespace NugetUtility
                         {
                             WriteOutput($"{request.RequestUri} failed due to {response.StatusCode}!", logLevel: LogLevel.Warning);
                             var fallbackResult = await GetNuGetPackageFileResult<Package>(packageWithVersion.Name, version, $"{packageWithVersion.Name}.nuspec".ToLowerInvariant());
-                            if (fallbackResult is Package)
+                            if (fallbackResult != null)
                             {
                                 licenses.Add($"{packageWithVersion.Name},{version}", fallbackResult);
                                 await this.AddTransitivePackages(project, licenses, fallbackResult);
@@ -250,21 +254,18 @@ namespace NugetUtility
             return await ResolvePackageVersionAsync(name, versionRange, GetVersionsFromNugetServerAsync);
         }
 
-#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
-        private async Task<IEnumerable<string>> GetVersionsFromLocalCacheAsync(string packageName)
-#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
+        private Task<IEnumerable<string>> GetVersionsFromLocalCacheAsync(string packageName)
         {
             // Nuget saves packages in lowercase format, and we should look for lowercase folders only to allow Linux case-sensitive folder enumeration to succeed
             DirectoryInfo di = new DirectoryInfo(Path.Combine(nugetRoot, packageName).ToLowerInvariant());
             try
             {
-                return di.GetDirectories().Select(dir => dir.Name);
+                return Task.FromResult(di.GetDirectories().Select(dir => dir.Name));
             }
             catch (DirectoryNotFoundException)
             {
-                return Enumerable.Empty<string>();
+                return Task.FromResult(Enumerable.Empty<string>());
             }
-
         }
 
         private async Task<IEnumerable<string>> GetVersionsFromNugetServerAsync(string packageName)
@@ -311,7 +312,7 @@ namespace NugetUtility
             }
         }
 
-        private async Task ReadNuspecFile(string project, PackageList licenses, string package, string version, Tuple<string, string> lookupKey, StreamReader textReader)
+        private async Task ReadNuspecFile(string project, Project licenses, string package, string version, Tuple<string, string> lookupKey, StreamReader textReader)
         {
             if (_serializer.Deserialize(new NamespaceIgnorantXmlTextReader(textReader)) is Package result)
             {
@@ -322,7 +323,7 @@ namespace NugetUtility
             }
         }
 
-        private async Task AddTransitivePackages(string project, PackageList licenses, Package result)
+        private async Task AddTransitivePackages(string project, Project licenses, Package result)
         {
             var groups = result.Metadata?.Dependencies?.Group;
             if (_packageOptions.IncludeTransitive && groups != null && !_packageOptions.UseProjectAssetsJson)
@@ -330,10 +331,8 @@ namespace NugetUtility
             {
                 foreach (var group in groups)
                 {
-                    var dependant =
-                        group
-                        .Dependency
-                        .Where(e => !licenses.Keys.Contains($"{e.Id},{e.Version}"))
+                    var dependant = group.Dependency
+                        .Where(e => !licenses.ContainsKey($"{e.Id},{e.Version}"))
                         .Select(e => new PackageNameAndVersion { Name = e.Id, Version = e.Version });
 
                     var dependantPackages = await GetNugetInformationAsync(project, dependant);
@@ -348,24 +347,34 @@ namespace NugetUtility
             }
         }
 
-        public async Task<Dictionary<string, PackageList>> GetPackages()
+        public async Task<Dictionary<string, Solution>> GetPackages()
         {
             WriteOutput(() => $"Starting {nameof(GetPackages)}...", logLevel: LogLevel.Verbose);
-            var licenses = new Dictionary<string, PackageList>();
-            var projectFiles = await GetValidProjects(_packageOptions.ProjectDirectory);
-            foreach (var projectFile in projectFiles)
-            {
-                var references = this.GetProjectReferences(projectFile);
-                var referencedPackages = references.Select((package) =>
-                {
-                    var split = package.Split(',', 2);
-                    return new PackageNameAndVersion { Name = split[0], Version = split[1] };
-                });
-                WriteOutput(Environment.NewLine + "Project:" + projectFile + Environment.NewLine, logLevel: LogLevel.Information);
-                var currentProjectLicenses = await this.GetNugetInformationAsync(projectFile, referencedPackages);
-                licenses[projectFile] = currentProjectLicenses;
-            }
+            
+            var solutionFiles = await GetValidProjects(_packageOptions.ProjectDirectory);
 
+            var licenses = new Dictionary<string, Solution>();
+            foreach (var solutionFile in solutionFiles)
+            {
+                if (!string.IsNullOrWhiteSpace(solutionFile.Key))
+                {
+                    WriteOutput(Environment.NewLine + "Solution:" + solutionFile.Key + Environment.NewLine, logLevel: LogLevel.Information);
+                }
+
+                var solution = new Solution(solutionFile.Key);
+                foreach (var projectFile in solutionFile.Value)
+                {
+                    var references = GetProjectReferences(projectFile);
+                    var referencedPackages = references.Select(package =>
+                    {
+                        var split = package.Split(',', 2);
+                        return new PackageNameAndVersion { Name = split[0], Version = split[1] };
+                    });
+                    WriteOutput(Environment.NewLine + "Project:" + projectFile + Environment.NewLine, logLevel: LogLevel.Information);
+                    solution[projectFile] = await GetNugetInformationAsync(projectFile, referencedPackages);
+                }
+                licenses[solutionFile.Key] = solution;
+            }
             return licenses;
         }
 
@@ -389,7 +398,7 @@ namespace NugetUtility
 
             if (!GetProjectExtensions().Any(projExt => projectPath.EndsWith(projExt)))
             {
-                projectPath = GetValidProjects(projectPath).GetAwaiter().GetResult().FirstOrDefault();
+                projectPath = GetValidProjects(projectPath).GetAwaiter().GetResult().FirstOrDefault().Value.FirstOrDefault();
             }
 
             if (projectPath is null)
@@ -433,9 +442,64 @@ namespace NugetUtility
         /// </summary>
         /// <param name="packages"></param>
         /// <returns></returns>
-        public List<LibraryInfo> MapPackagesToLibraryInfo(Dictionary<string, PackageList> packages)
+        public List<LibraryInfo> MapPackagesToLibraryInfo(Dictionary<string, Solution> solutions)
         {
             WriteOutput(() => $"Starting {nameof(MapPackagesToLibraryInfo)}...", logLevel: LogLevel.Verbose);
+
+            var libraryInfos = new List<LibraryInfo>(256);
+            foreach (var solution in solutions)
+            {
+                var info = MapPackagesToLibraryInfo(solution.Value);
+                libraryInfos.AddRange(info);
+            }
+
+            // merge in missing manual items where there wasn't a package
+            var missedManualItems = _packageOptions.ManualInformation.Except(libraryInfos, LibraryNameAndVersionComparer.Default);
+            foreach (var missed in missedManualItems)
+            {
+                libraryInfos.Add(missed);
+            }
+
+            if (_packageOptions.UniqueOnly)
+            {
+                libraryInfos = libraryInfos
+                    .GroupBy(x => new { x.PackageName, x.PackageVersion })
+                    .Select(g =>
+                    {
+                        var first = g.First();
+                        return new LibraryInfo
+                        {
+                            PackageName = first.PackageName,
+                            PackageVersion = first.PackageVersion,
+                            PackageUrl = first.PackageUrl,
+                            Copyright = first.Copyright,
+                            Authors = first.Authors,
+                            Description = first.Description,
+                            LicenseType = first.LicenseType,
+                            LicenseUrl = first.LicenseUrl,
+                            Projects = _packageOptions.IncludeProjectFile ? string.Join(";", g.Select(p => p.Projects)) : null
+                        };
+                    })
+                    .ToList();
+            }
+
+            if (_packageOptions.LatestVersion)
+            {
+                libraryInfos = libraryInfos
+                    .GroupBy(x => new { x.PackageName, x.LicenseType, x.LicenseUrl })
+                    .Select(g =>
+                    {
+                        return g.OrderByDescending(y => y.PackageVersion).First();
+                    })
+                    .ToList();
+            }
+
+            return libraryInfos
+                .OrderBy(p => p.PackageName)
+                .ToList();
+        }
+        private List<LibraryInfo> MapPackagesToLibraryInfo(Dictionary<string, Project> packages)
+        {
             var libraryInfos = new List<LibraryInfo>(256);
             foreach (var packageList in packages)
             {
@@ -476,17 +540,27 @@ namespace NugetUtility
                     .ToList();
             }
 
+            if (_packageOptions.LatestVersion)
+            {
+                libraryInfos = libraryInfos
+                    .GroupBy(x => new { x.PackageName, x.LicenseType, x.LicenseUrl })
+                    .Select(g =>
+                    {
+                        return g.OrderByDescending(y => y.PackageVersion).First();
+                    })
+                    .ToList();
+            }
+
             return libraryInfos
                 .OrderBy(p => p.PackageName)
                 .ToList();
         }
-
         private LibraryInfo MapPackageToLibraryInfo(Package item, string projectFile)
         {
             string licenseType = item.Metadata.License?.Text ?? null;
             string licenseUrl = item.Metadata.LicenseUrl ?? null;
 
-            if (licenseUrl is string && string.IsNullOrWhiteSpace(licenseType))
+            if (licenseUrl != null && string.IsNullOrWhiteSpace(licenseType))
             {
                 if (_licenseMappings.TryGetValue(licenseUrl, out var license))
                 {
@@ -521,7 +595,7 @@ namespace NugetUtility
             };
         }
         
-        public IValidationResult<KeyValuePair<string, Package>> ValidateLicenses(Dictionary<string, PackageList> projectPackages)
+        public IValidationResult<KeyValuePair<string, Package>> ValidateLicenses(Dictionary<string, Project> projectPackages)
         {
             if (_packageOptions.AllowedLicenseType.Count == 0)
             {
@@ -660,7 +734,7 @@ namespace NugetUtility
             {
                 if (_serializer.Deserialize(new NamespaceIgnorantXmlTextReader(textReader)) is T result)
                 {
-                    return (T)result;
+                    return result;
                 }
             }
             else if (typeT == typeof(string))
@@ -671,37 +745,59 @@ namespace NugetUtility
             throw new ArgumentException($"{typeT.FullName} isn't supported!");
         }
 
-        private IEnumerable<string> GetFilteredProjects(IEnumerable<string> projects)
+        private IReadOnlyDictionary<string, IEnumerable<string>> GetFilteredProjects(IReadOnlyDictionary<string, IEnumerable<string>> solutions)
         {
             if (_packageOptions.ProjectFilter.Count == 0)
             {
-                return projects;
+                return solutions;
             }
 
-            var filteredProjects = projects.Where(project => !_packageOptions.ProjectFilter
-               .Any(projectToSkip =>
-                  project.Contains(projectToSkip, StringComparison.OrdinalIgnoreCase)
-               )).ToList();
+            var filteredSolutions = new Dictionary<string, IEnumerable<string>>();
+            foreach (var solution in solutions)
+            {
+                var filteredProjects = solution.Value.Where(project => 
+                    !_packageOptions.ProjectFilter.Any(projectToSkip => 
+                        project.Contains(projectToSkip, StringComparison.OrdinalIgnoreCase)));
+
+                if (filteredProjects.Any())
+                {
+                    filteredSolutions.Add(solution.Key, filteredProjects.ToList());
+                }
+            }
 
             WriteOutput(() => $"Filtered Project Files {Environment.NewLine}", logLevel: LogLevel.Verbose);
-            WriteOutput(() => string.Join(Environment.NewLine, filteredProjects.ToArray()), logLevel: LogLevel.Verbose);
+            foreach (var filteredSolution in filteredSolutions)
+            {
+                if (!string.IsNullOrWhiteSpace(filteredSolution.Key))
+                {
+                    WriteOutput(() => $"Solution Name: {filteredSolution.Key} {Environment.NewLine}", logLevel: LogLevel.Verbose);
+                }
+                WriteOutput(() => string.Join(Environment.NewLine, filteredSolution.Value.ToArray()), logLevel: LogLevel.Verbose);
+            }
 
-            return filteredProjects;
+            return filteredSolutions;
         }
 
         private async Task HandleLicensing(Package package)
         {
             if (package?.Metadata is null) { return; }
-            if (package.Metadata.LicenseUrl is string licenseUrl &&
-                package.Metadata.License?.Text is null)
+
+            if (package.Metadata.LicenseUrl is string licenseUrl)
             {
-                if (_licenseMappings.TryGetValue(licenseUrl, out var mappedLicense))
+                _licenseMappings.TryGetValue(licenseUrl, out var mappedLicense);
+
+                //if mapping exists locally then the value possibly received via http-request will be overwritten
+                if (package.Metadata.License?.Text is not null && mappedLicense is not null)
+                {
+                    package.Metadata.License.Text = mappedLicense;
+                }
+                else if (package.Metadata.License?.Text is null && mappedLicense is not null)
                 {
                     package.Metadata.License = new License { Text = mappedLicense };
                 }
             }
 
-            if (!package.Metadata.License.IsLicenseFile() || _packageOptions.AllowedLicenseType.Count == 0) { return; }
+            if (package.Metadata.License?.IsLicenseFile() != true || _packageOptions.AllowedLicenseType.Count == 0) { return; }
 
             var key = Tuple.Create(package.Metadata.Id, package.Metadata.Version);
 
@@ -749,18 +845,17 @@ namespace NugetUtility
         /// </summary>
         /// <param name="projectPath">The Project Path</param>
         /// <returns></returns>
-        private IEnumerable<string> GetProjectReferencesFromNewProjectFile(string projectPath)
+        private static string[] GetProjectReferencesFromNewProjectFile(string projectPath)
         {
             var projDefinition = XDocument.Load(projectPath);
 
             // Uses an XPath instead of direct navigation (using Elements("…")) as the project file may use xml namespaces
             return projDefinition?
                 .XPathSelectElements("/*[local-name()='Project']/*[local-name()='ItemGroup']/*[local-name()='PackageReference']")?
-                .Select(refElem => GetProjectReferenceFromElement(refElem)) ??
-                Array.Empty<string>();
+                .Select(refElem => GetProjectReferenceFromElement(refElem))?.ToArray() ?? Array.Empty<string>();
         }
 
-        private string GetProjectReferenceFromElement(XElement refElem)
+        private static string GetProjectReferenceFromElement(XElement refElem)
         {
             string version, package = refElem.Attribute("Include")?.Value ?? string.Empty;
 
@@ -770,8 +865,8 @@ namespace NugetUtility
                 version = versionAttribute.Value;
             else // no version attribute, look for child element
                 version = refElem.Elements()
-                .Where(elem => elem.Name.LocalName == "Version")
-                .FirstOrDefault()?.Value ?? string.Empty;
+                .FirstOrDefault(elem => elem.Name.LocalName == "Version")?
+                .Value ?? string.Empty;
 
             return $"{package},{version}";
         }
@@ -837,46 +932,74 @@ namespace NugetUtility
             }
         }
 
-        private async Task<IEnumerable<string>> GetValidProjects(string projectPath)
+        private async Task<IReadOnlyDictionary<string, IEnumerable<string>>> GetValidProjects(string projectPath)
         {
             var pathInfo = new FileInfo(projectPath);
             var extensions = GetProjectExtensions();
-            IEnumerable<string> validProjects;
+
+            var validSolutions = new Dictionary<string, IEnumerable<string>>();
             switch (pathInfo.Extension)
             {
                 case ".sln":
-                    validProjects = (await ParseSolution(pathInfo.FullName))
+                    var validSolutionProjects = (await ParseSolution(pathInfo.FullName))
                         .Select(p => new FileInfo(Path.Combine(pathInfo.Directory.FullName, p)))
                         .Where(p => p.Exists && extensions.Contains(p.Extension))
-                        .Select(p => p.FullName);
+                        .Select(p => p.FullName.EnsureCorrectPathCharacter());
+
+                    validSolutions.Add(pathInfo.FullName, validSolutionProjects);
                     break;
                 case ".csproj":
-                    validProjects = new string[] { projectPath };
-                    break;
                 case ".fsproj":
-                    validProjects = new string[] { projectPath };
-                    break;
                 case ".vbproj":
-                    validProjects = new string[] { projectPath };
+                    validSolutions.Add(string.Empty, new string[] { projectPath });
                     break;
                 case ".json":
-                    validProjects = ReadListFromFile<string>(projectPath)
-                        .Select(x => x.EnsureCorrectPathCharacter())
-                        .ToList();
+                    foreach (var filePath in ReadListFromFile<string>(projectPath))
+                    {
+                        var fileInfo = new FileInfo(filePath);
+                        if (fileInfo.Extension == ".sln")
+                        {
+                            var validJsonSolutionProjects = (await ParseSolution(fileInfo.FullName))
+                                .Select(p => new FileInfo(Path.Combine(fileInfo.Directory.FullName, p)))
+                                .Where(p => p.Exists && extensions.Contains(p.Extension))
+                                .Select(p => p.FullName.EnsureCorrectPathCharacter());
+
+                            validSolutions.Add(fileInfo.FullName, validJsonSolutionProjects);
+                        }
+                        else
+                        {
+                            if (validSolutions.TryGetValue(string.Empty, out var validJsonProjects))
+                            {
+                                validSolutions[string.Empty] = validJsonProjects.Append(filePath.EnsureCorrectPathCharacter());
+                            }
+                            else
+                            {
+                                validSolutions.Add(string.Empty, new string[] { filePath.EnsureCorrectPathCharacter() });
+                            }
+                        }
+                    }
                     break;
                 default:
-                    validProjects =
+                    var validDefaultProjects =
                         GetProjectExtensions(withWildcard: true)
                         .SelectMany(wildcardExtension =>
-                           Directory.EnumerateFiles(projectPath, wildcardExtension, SearchOption.AllDirectories)
-                        );
+                           Directory.EnumerateFiles(projectPath, wildcardExtension, SearchOption.AllDirectories));
+
+                    validSolutions.Add(string.Empty, validDefaultProjects);
                     break;
             }
 
             WriteOutput(() => $"Discovered Project Files {Environment.NewLine}", logLevel: LogLevel.Verbose);
-            WriteOutput(() => string.Join(Environment.NewLine, validProjects.ToArray()), logLevel: LogLevel.Verbose);
+            foreach (var validSolution in validSolutions)
+            {
+                if (!string.IsNullOrWhiteSpace(validSolution.Key))
+                {
+                    WriteOutput(() => $"Solution Name: {validSolution.Key} {Environment.NewLine}", logLevel: LogLevel.Verbose);
+                }
+                WriteOutput(() => string.Join(Environment.NewLine, validSolution.Value.ToArray()), logLevel: LogLevel.Verbose);
+            }
 
-            return GetFilteredProjects(validProjects);
+            return GetFilteredProjects(validSolutions);
         }
 
         private async Task<IEnumerable<string>> ParseSolution(string fullName)
@@ -978,6 +1101,10 @@ namespace NugetUtility
                 if (item.LicenseUrl == deprecateNugetLicense)
                 {
                     item.LicenseUrl = string.Format("https://www.nuget.org/packages/{0}/{1}/License", item.PackageName, item.PackageVersion);
+                    if (_licenseMappings.TryGetValue(item.LicenseUrl, out var mappedLicense))
+                    {
+                        item.LicenseType = mappedLicense;
+                    }
                 }
             }
             return result;
@@ -1196,6 +1323,39 @@ namespace NugetUtility
             }
 
             File.WriteAllText(GetOutputFilename("licenses.txt"), sb.ToString());
+        }
+        public void SaveAsCsvFile(List<LibraryInfo> libraries)
+        {
+            if (!libraries.Any()) { return; }
+            StringBuilder sb = new StringBuilder(256);
+            sb.Append("Package");
+            sb.Append(";");
+            sb.Append("Version");
+            sb.Append(";");
+            sb.Append("License Type");
+            sb.Append(";");
+            sb.Append("License URL");
+            sb.AppendLine();
+            foreach (var lib in libraries)
+            {
+                sb.Append(lib.PackageName);
+                sb.Append(";");
+
+                //"hack" that circumvents EXCELs problem with display version numbers as dates
+                //in the raw .csv file its looks like this: "=""1.1.1"""
+                //https://stackoverflow.com/questions/165042/stop-excel-from-automatically-converting-certain-text-values-to-dates
+                sb.Append("\"=\"\"");
+                sb.Append(lib.PackageVersion);
+                sb.Append("\"\"\"");
+
+
+                sb.Append(";");
+                sb.Append(lib.LicenseType);
+                sb.Append(";");
+                sb.Append(lib.LicenseUrl);
+                sb.AppendLine();
+            }
+            File.WriteAllText(GetOutputFilename("licenses.csv"), sb.ToString());
         }
 
         public void SaveAsMarkdown(List<LibraryInfo> libraries)

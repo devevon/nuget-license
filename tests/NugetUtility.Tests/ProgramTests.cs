@@ -3,6 +3,9 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Threading.Tasks;
 using FluentAssertions;
+
+using NugetUtility.Model;
+
 using NUnit.Framework;
 
 namespace NugetUtility.Tests {
@@ -62,10 +65,10 @@ namespace NugetUtility.Tests {
         [Test]
         public async Task Main_Should_Run_For_This_Solution_With_Custom_Directory () {
             const string args = "-i " + TestSetup.ThisProjectSolutionPath + " -f /tmp -j --outfile custom.json";
-            var status = await Program.Main (args.Split (' '));
+            var status = await Program.Main(args.Split (' '));
 
-            status.Should ().Be (0);
-            File.Exists ("/tmp/custom.json").Should ().BeTrue ();
+            status.Should().Be(0);
+            File.Exists("/tmp/custom.json").Should().BeTrue();
         }
 
         [Test]
@@ -73,11 +76,11 @@ namespace NugetUtility.Tests {
             const string args = "-i " + TestSetup.ThisProjectSolutionPath + @" -j --outfile custom-manual.json --manual-package-information ../../../SampleManualInformation.json";
             var status = await Program.Main (args.Split (' '));
 
-            status.Should ().Be (0);
+            status.Should().Be(0);
             var outputFile = new FileInfo ("custom-manual.json");
-            outputFile.Exists.Should ().BeTrue ();;
+            outputFile.Exists.Should().BeTrue();
             Utilities.ReadListFromFile<LibraryInfo> (outputFile.FullName)
-                .Should ().Contain (l => l.PackageName == "ASamplePackage");
+                .Should().Contain(l => l.PackageName == "ASamplePackage");
         }
 
         [Test]
@@ -85,7 +88,7 @@ namespace NugetUtility.Tests {
             var args = "--allowed-license-types ../../../SampleAllowedLicenses.json --forbidden-license-types ../../../SampleForbiddenLicenses.json";
             var status = await Program.Main (args.Split (' '));
 
-            status.Should ().Be(1);
+            status.Should().Be(1);
         }
 
 #if WINDOWS

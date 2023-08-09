@@ -8,6 +8,7 @@ using CommandLine.Text;
 using FluentAssertions;
 using FluentAssertions.Execution;
 using NUnit.Framework;
+using NugetUtility.Model;
 
 namespace NugetUtility.Tests
 {
@@ -89,7 +90,7 @@ namespace NugetUtility.Tests
         public void MapPackagesToLibraryInfo_Unique_Should_Return_One_Result()
         {
             AddUniquePackageOption();
-            PackageList list = new PackageList();
+            Project list = new Project("packages");
             list.Add("log4net", new Package
             {
                 Metadata = new Metadata
@@ -118,9 +119,15 @@ namespace NugetUtility.Tests
                 }
             });
 
-            var packages = new Dictionary<string, PackageList>();
-            packages.Add("packages", list);
-            var info = _methods.MapPackagesToLibraryInfo(packages);
+            var solution = new Solution()
+            {
+                { list.ProjectFile, list }
+            };
+            var solutions = new Dictionary<string, Solution>()
+            {
+                { solution.SolutionFile, solution }
+            };
+            var info = _methods.MapPackagesToLibraryInfo(solutions);
             info.Count.Should().Equals(1);
         }
 
@@ -139,7 +146,7 @@ namespace NugetUtility.Tests
                 });
 
 
-            PackageList list = new PackageList();
+            Project list = new Project("packages");
             list.Add("log4net", new Package
             {
                 Metadata = new Metadata
@@ -169,9 +176,15 @@ namespace NugetUtility.Tests
                 }
             });
 
-            var packages = new Dictionary<string, PackageList>();
-            packages.Add("packages", list);
-            var info = methods.MapPackagesToLibraryInfo(packages);
+            var solution = new Solution()
+            {
+                { list.ProjectFile, list }
+            };
+            var solutions = new Dictionary<string, Solution>()
+            {
+                { solution.SolutionFile, solution }
+            };
+            var info = methods.MapPackagesToLibraryInfo(solutions);
             info.Count.Should().Equals(2);
         }
 
@@ -237,7 +250,7 @@ namespace NugetUtility.Tests
             });
 
             var result = await methods.GetPackages();
-            var validationResult = methods.ValidateLicenses(result);
+            var validationResult = methods.ValidateLicenses(result.Values.FirstOrDefault());
 
             result.Should().HaveCount(1);
             validationResult.IsValid.Should().BeFalse();
@@ -255,7 +268,7 @@ namespace NugetUtility.Tests
             });
 
             var result = await methods.GetPackages();
-            var validationResult = methods.ValidateLicenses(result);
+            var validationResult = methods.ValidateLicenses(result.Values.FirstOrDefault());
 
             result.Should().HaveCount(1);
             validationResult.IsValid.Should().BeFalse();
@@ -411,12 +424,14 @@ namespace NugetUtility.Tests
 
             using (new AssertionScope())
             {
-                result.Should()
-                    .HaveCount(1);
+                result.Should().HaveCount(1);
+                var solution = result.First().Value;
+                solution.Should().HaveCount(1);
+                var project = solution.First().Value;
+                project.Should().HaveCount(1);
+                var package = project.First().Value;
 
-                result.First().Value.Should().HaveCount(1);
-
-                result.First().Value.First().Value.Metadata.Id.Should().Be("FluentAssertions");
+                package.Metadata.Id.Should().Be("FluentAssertions");
             }
         }
     }

@@ -1,12 +1,28 @@
 {
   "profiles": {
-    "NugetUtility": {
-      "commandName": "Project"
-    },
     "WSL": {
       "commandName": "WSL2",
-      "environmentVariables": {},
       "distributionName": ""
+    },
+    "Microservices": {
+      "commandName": "Project",
+      "commandLineArgs": "-t -u -o --outfile Microservices.csv --csv --use-project-assets-json -i Projects\\Microservices.json -f \"C:\\Licenses\" --projects-filter Filters\\ProjectFilters.json --packages-filter Filters\\PackagesFilters.json"
+    },
+    "Debug": {
+      "commandName": "Project",
+      "commandLineArgs": "-t -u -o -l Information --csv --use-project-assets-json -i ProjectInput.json -f \"C:\\Users\\peter.maierhofer.EVON\\Documents\\Licenses\" --projects-filter ProjectFilters.json --packages-filter PackagesFilters.json"
+    },
+    "Drivers": {
+      "commandName": "Project",
+      "commandLineArgs": "-t -u -o --outfile Drivers.csv --csv --use-project-assets-json -i Projects\\Drivers.json -f \"C:\\Licenses\" --projects-filter Filters\\ProjectFilters.json --packages-filter Filters\\PackagesFilters.json"
+    },
+    "Plugins": {
+      "commandName": "Project",
+      "commandLineArgs": "-t -u -o --outfile Plugins.csv --csv --use-project-assets-json -i Projects\\Plugins.json -f \"C:\\Licenses\" --projects-filter Filters\\ProjectFilters.json --packages-filter Filters\\PackagesFilters.json"
+    },
+    "IocModule": {
+      "commandName": "Project",
+      "commandLineArgs": "-t -u -o --outfile IocModule.csv --csv --use-project-assets-json -i Projects\\IocModule.json -f \"C:\\Licenses\" --projects-filter Filters\\ProjectFilters.json --packages-filter Filters\\PackagesFilters.json"
     }
   }
 }

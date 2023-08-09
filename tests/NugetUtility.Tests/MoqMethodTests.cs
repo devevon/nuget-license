@@ -14,6 +14,8 @@ using Moq;
 
 using Moq.Protected;
 
+using NugetUtility.Model;
+
 using NUnit.Framework;
 
 

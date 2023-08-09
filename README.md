@@ -46,7 +46,7 @@ Usage: dotnet-project-licenses [options]
   <tr><td> -e, --export-license-texts </td><td>Export the raw license texts</td></tr>
   <tr><td> -c, --convert-html-to-text </td><td>Strip HTML tags if the license file is HTML and save as plain text (EXPERIMENTAL)</td></tr>
   <tr><td> --help </td><td>Display this help screen</td></tr>
-  <tr><td> --version </td><td>Display version information</td></tr>
+  <tr><td> -v, --latest-version </td><td>(Default: false) Display only the license with the latest version if multiple, differenlty versioned instances are found</td></tr>
   <tr><td> --ignore-ssl-certificate-errors </td><td>Ignore SSL certificate errors in HttpClient</td></tr>
   <tr><td> --timeout </td><td>Set HttpClient timeout in seconds</td></tr>
   <tr><td> --proxy-url </td><td>Set a proxy server URL to be used by HttpClient</td></tr>

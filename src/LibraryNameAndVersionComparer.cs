@@ -1,6 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 
+using NugetUtility.Model;
+
 namespace NugetUtility
 {
     public class LibraryNameAndVersionComparer : IEqualityComparer<LibraryInfo>
