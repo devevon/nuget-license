@@ -19,6 +19,7 @@
 		<PackageProjectUrl>https://github.com/devevon/nuget-license</PackageProjectUrl>
 		<GeneratePackageOnBuild Condition="'$(GeneratePackageOnBuild)' == ''">false</GeneratePackageOnBuild>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<Description>A .net core tool to print the licenses of a project. This tool support .NET Core and .NET Standard Projects.</Description>
 	</PropertyGroup>
 	
 	<ItemGroup>
