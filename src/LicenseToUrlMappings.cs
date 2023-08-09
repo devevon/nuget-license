@@ -87,6 +87,8 @@ namespace NugetUtility
             { "https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet/blob/master/LICENSE.txt", MIT},
             { "https://raw.githubusercontent.com/Microsoft/dotnet/master/LICENSE", MIT},
             { "https://go.microsoft.com/fwlink/?linkid=841311", MIT},
+            { "https://github.com/MahApps/MahApps.Metro/blob/master/LICENSE", MIT},
+            { "http://www.pdfsharp.net/PDFsharp_License.ashx", MIT},
 
             { "http://www.gnu.org/licenses/lgpl.html", GNU },
             { "https://raw.githubusercontent.com/NetTopologySuite/ProjNet4GeoAPI/master/LICENSE", GNU },
@@ -107,6 +109,7 @@ namespace NugetUtility
             { "https://licenses.nuget.org/MS-PL", MS_PL },
             { "https://github.com/YaccConstructor/QuickGraph/blob/master/LICENSE.txt", MS_PL },
             { "https://github.com/ClemensFischer/XAML-Map-Control/blob/master/license.md", MS_PL },
+            { "https://raw.githubusercontent.com/haf/DotNetZip.Semverd/master/LICENSE", MS_PL },
 
             { "https://www.microsoft.com/web/webpi/eula/net_library_eula_ENU.htm", MS_EULA },
             { "https://www.nuget.org/packages/Microsoft.TeamFoundation.DistributedTask.Common.Contracts/16.170.0/License", MS_EULA },
