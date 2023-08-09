@@ -1340,7 +1340,15 @@ namespace NugetUtility
             {
                 sb.Append(lib.PackageName);
                 sb.Append(";");
+
+                //"hack" that circumvents EXCELs problem with display version numbers as dates
+                //in the raw .csv file its looks like this: "=""1.1.1"""
+                //https://stackoverflow.com/questions/165042/stop-excel-from-automatically-converting-certain-text-values-to-dates
+                sb.Append("\"=\"\"");
                 sb.Append(lib.PackageVersion);
+                sb.Append("\"\"\"");
+
+
                 sb.Append(";");
                 sb.Append(lib.LicenseType);
                 sb.Append(";");
