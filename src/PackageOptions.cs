@@ -164,6 +164,12 @@ namespace NugetUtility
             {
                 if (_projectFilter.Any()) { return _projectFilter; }
 
+                //if the user provides the argument 'default' for flag --projects-filter, then the preset internal json file will be used
+                if (ProjectsFilterOption is "default") 
+                {
+                    return _projectFilter = ReadListFromFile<string>("Filters/ProjectFilters.json");
+                }
+
                 return _projectFilter = ReadListFromFile<string>(ProjectsFilterOption)
                     .Select(x => x.EnsureCorrectPathCharacter())
                     .ToList();
@@ -209,6 +215,12 @@ namespace NugetUtility
                     (PackagesFilterOption != null && UserRegexRegex.IsMatch(PackagesFilterOption)))
                 {
                     return _packagesFilter;
+                }
+
+                //if the user provides the argument 'default' for flag --packages-filter, then the preset internal json file will be used
+                if (PackagesFilterOption is "default")
+                {
+                    return _packagesFilter = ReadListFromFile<string>("Filters/PackagesFilters.json");
                 }
 
                 return _packagesFilter = ReadListFromFile<string>(PackagesFilterOption);
