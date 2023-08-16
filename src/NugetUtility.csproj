@@ -12,14 +12,13 @@
 		<RepositoryType>git</RepositoryType>
 		<PackageId>dotnet-project-licenses-evon</PackageId>
 		<ToolCommandName>dotnet-project-licenses-evon</ToolCommandName>
-		<Version>2.7.2</Version>
+		<Version>2.7.3</Version>
 		<Authors>Tom Chavakis, Lexy2, senslen, pma, cbu</Authors>
-		<Company>-</Company>
 		<Title>.NET Core Tool to print a list of the licenses of projects</Title>
 		<PackageProjectUrl>https://github.com/devevon/nuget-license</PackageProjectUrl>
 		<GeneratePackageOnBuild Condition="'$(GeneratePackageOnBuild)' == ''">false</GeneratePackageOnBuild>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-		<Description>A .net core tool to print the licenses of a project. This tool support .NET Core and .NET Standard Projects.</Description>
+		<Description>A .net core tool to print the licenses of a project. This tool support .NET Core and .NET Standard Projects. The project can be found under "https://github.com/devevon/nuget-license".</Description>
 	</PropertyGroup>
 	
 	<ItemGroup>
