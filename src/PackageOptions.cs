@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using CommandLine;
 using CommandLine.Text;
-
+using NugetUtility.Filters;
 using NugetUtility.Model;
 
 using static NugetUtility.Utilities;
@@ -167,7 +167,7 @@ namespace NugetUtility
                 //if the user provides the argument 'default' for flag --projects-filter, then the preset internal json file will be used
                 if (ProjectsFilterOption is "default") 
                 {
-                    return _projectFilter = ReadListFromFile<string>("Filters/ProjectFilters.json");
+                    return _projectFilter = ProjectFilters.Default;
                 }
 
                 return _projectFilter = ReadListFromFile<string>(ProjectsFilterOption)
@@ -220,7 +220,7 @@ namespace NugetUtility
                 //if the user provides the argument 'default' for flag --packages-filter, then the preset internal json file will be used
                 if (PackagesFilterOption is "default")
                 {
-                    return _packagesFilter = ReadListFromFile<string>("Filters/PackagesFilters.json");
+                    return _packagesFilter = PackageFilters.Default;
                 }
 
                 return _packagesFilter = ReadListFromFile<string>(PackagesFilterOption);
